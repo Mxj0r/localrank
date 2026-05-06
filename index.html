@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LocalRank — Digital Health Score for Local Businesses</title>
+  <meta name="description" content="Paste any Google Maps URL and get an instant digital presence score for a local business. Free diagnostic tool from Minter Web Agency.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2309090B'/><circle cx='16' cy='16' r='8' fill='none' stroke='%23CAFF04' stroke-width='2.5'/><circle cx='16' cy='16' r='3' fill='%23CAFF04'/></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Design Tokens ─── */
+    :root {
+      --color-bg:              #09090B;
+      --color-surface:         #111114;
+      --color-surface-elevated:#1C1C20;
+      --color-border:          #27272A;
+      --color-border-strong:   #3F3F46;
+
+      --color-primary:         #CAFF04;
+      --color-primary-dim:     #A3CC03;
+      --color-primary-glow:    rgba(202,255,4,0.15);
+      --color-primary-subtle:  rgba(202,255,4,0.08);
+
+      --color-text:            #FAFAFA;
+      --color-text-muted:     #71717A;
+      --color-text-inverse:   #09090B;
+
+      --color-success:         #22C55E;
+      --color-warning:         #F59E0B;
+      --color-error:           #EF4444;
+
+      --color-gauge-track:     #27272A;
+
+      --font-heading:  'Syne', sans-serif;
+      --font-body:      'Manrope', sans-serif;
+      --font-mono:      'JetBrains Mono', monospace;
+
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  14px;
+      --radius-full: 9999px;
+
+      --transition-fast: 120ms ease;
+      --transition-base: 200ms ease;
+      --transition-slow: 350ms ease;
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100dvh;
+    }
+
+    ::selection {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--color-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: var(--radius-full); }
+
+    /* ─── Layout ─── */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      display: inline-block;
+      margin-left: 2px;
+      flex-shrink: 0;
+    }
+
+    .logo-sub {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    .settings-btn {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      transition: border-color var(--transition-base), color var(--transition-base);
+      display: flex;
+      align-items: center;
+    }
+
+    .settings-btn:hover {
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 72px 0 64px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, var(--color-border) 1px, transparent 0);
+      background-size: 28px 28px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-primary-subtle);
+      border: 1px solid rgba(202,255,4,0.2);
+      border-radius: var(--radius-full);
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-primary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      animation: pulse-dot 2s ease infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: var(--font-heading);
+      font-size: clamp(36px, 7vw, 52px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      color: var(--color-text);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--color-primary);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--color-text-muted);
+      max-width: 480px;
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    /* ─── Input Group ─── */
+    .input-group {
+      display: flex;
+      gap: 0;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      transition: border-color var(--transition-base), box-shadow var(--transition-base);
+      overflow: hidden;
+    }
+
+    .input-group:focus-within {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-glow);
+    }
+
+    .input-group.has-error {
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+    }
+
+    .input-group.is-loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .input-icon {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .url-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--color-text);
+      padding: 16px 0;
+      min-width: 0;
+    }
+
+    .url-input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .analyze-btn {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border: none;
+      padding: 14px 24px;
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      margin: 6px;
+      white-space: nowrap;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .analyze-btn:hover { background: var(--color-primary-dim); }
+    .analyze-btn:active { transform: scale(0.97); }
+    .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .input-error {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--color-error);
+      display: none;
+    }
+
+    .input-group.has-error + .input-error { display: block; }
+
+    /* ─── Settings Panel ─── */
+    .settings-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--transition-slow), opacity var(--transition-slow);
+      opacity: 0;
+    }
+
+    .settings-panel.open {
+      max-height: 200px;
+      opacity: 1;
+      margin-top: 16px;
+    }
+
+    .settings-inner {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .settings-field {
+      flex: 1;
+    }
+
+    .settings-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .settings-input {
+      width: 100%;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--color-text);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .settings-input:focus { border-color: var(--color-primary); }
+    .settings-input::placeholder { color: var(--color-text-muted); font-family: var(--font-body); }
+
+    .settings-save {
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color var(--transition-base);
+    }
+
+    .settings-save:hover { border-color: var(--color-border-strong); }
+
+    .settings-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    /* ─── Results Section ─── */
+    .results {
+      display: none;
+      padding-bottom: 64px;
+    }
+
+    .results.visible { display: block; }
+
+    /* ─── Score Panel ─── */
+    .score-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      text-align: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--color-warning);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      display: none;
+    }
+
+    .demo-badge.visible { display: block; }
+
+    .score-panel-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* ─── Gauge ─── */
+    .gauge-wrapper {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 24px;
+    }
+
+    .gauge-svg {
+      width: 200px;
+      height: 200px;
+      transform: rotate(-135deg);
+    }
+
+    .gauge-track {
+      fill: none;
+      stroke: var(--color-gauge-track);
+      stroke-width: 10;
+      stroke-linecap: round;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 226;
+      stroke-dashoffset: 226;
+      transition: stroke-dashoffset 1s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.4s ease;
+    }
+
+    .gauge-fill.score-high   { stroke: var(--color-success); }
+    .gauge-fill.score-mid   { stroke: var(--color-warning); }
+    .gauge-fill.score-low   { stroke: var(--color-error); }
+
+    .gauge-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .gauge-score {
+      font-family: var(--font-mono);
+      font-size: 52px;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--color-text);
+      letter-spacing: -2px;
+    }
+
+    .gauge-denom {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .gauge-grade {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+      background: var(--color-surface-elevated);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
+    }
+
+    .gauge-grade.grade-high { border-color: rgba(34,197,94,0.4); color: var(--color-success); }
+    .gauge-grade.grade-mid  { border-color: rgba(245,158,11,0.4); color: var(--color-warning); }
+    .gauge-grade.grade-low  { border-color: rgba(239,68,68,0.4); color: var(--color-error); }
+
+    /* ─── Verdict ─── */
+    .verdict {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+
+    .verdict.high { color: var(--color-success); }
+    .verdict.mid  { color: var(--color-warning); }
+    .verdict.low  { color: var(--color-error); }
+
+    .verdict-sub {
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    /* ─── Place Name ─── */
+    .place-name {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+
+    .place-address {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* ─── Category Cards ─── */
+    .breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 540px) {
+      .breakdown { grid-template-columns: 1fr; }
+    }
+
+    .cat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .cat-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .cat-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--color-primary-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .cat-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .cat-score {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    .cat-score span { color: var(--color-text); }
+
+    .cat-bar-track {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .cat-bar-fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: var(--radius-full);
+      width: 0%;
+      transition: width 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cat-bar-fill.bar-high   { background: var(--color-success); }
+    .cat-bar-fill.bar-mid    { background: var(--color-warning); }
+    .cat-bar-fill.bar-low    { background: var(--color-error); }
+
+    .cat-insight {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    /* ─── CTA Section ─── */
+    .cta-section {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .cta-section h2 {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      margin-bottom: 8px;
+    }
+
+    .cta-section p {
+      font-size: 14px;
+      color: var(--color-text-muted);
+      margin-bottom: 24px;
+    }
+
+    .cta-form {
+      display: flex;
+      gap: 10px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 480px) {
+      .cta-form { flex-direction: column; }
+    }
+
+    .cta-input {
+      flex: 1;
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--color-text);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .cta-input:focus { border-color: var(--color-primary); }
+    .cta-input::placeholder { color: var(--color-text-muted); }
+
+    .cta-btn {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border: none;
+      padding: 12px 22px;
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .cta-btn:hover { background: var(--color-primary-dim); }
+    .cta-btn:active { transform: scale(0.97); }
+
+    .cta-success {
+      display: none;
+      color: var(--color-success);
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+
+    .cta-success.visible { display: block; }
+
+    /* ─── Quick Wins ─── */
+    .quick-wins {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .quick-wins-title {
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-wins-title svg { color: var(--color-primary); }
+
+    .quick-win-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .quick-win-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .quick-win-item:first-child { padding-top: 0; }
+
+    .quick-win-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(202,255,4,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--color-primary);
+    }
+
+    .quick-win-text strong { color: var(--color-text); }
+
+    /* ─── Footer ─── */
+    .footer {
+      padding: 24px 0 40px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-text {
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    .footer-text a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    .footer-text a:hover { text-decoration: underline; }
+
+    /* ─── Spinner ─── */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(9,9,11,0.3);
+      border-top-color: var(--color-text-inverse);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 0 48px; }
+      .score-panel { padding: 28px 20px; }
+      .cta-section { padding: 24px 20px; }
+      .gauge-wrapper { width: 170px; height: 170px; }
+      .gauge-svg { width: 170px; height: 170px; }
+      .gauge-score { font-size: 44px; }
+    }
+
+    /* ─── Focus Visible ─── */
+    :focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Header ─── -->
+<header class="header">
+  <div class="container">
+    <div class="header-inner">
+      <div>
+        <a href="/" class="logo">Local<span style="color:var(--color-primary)">Rank</span><span class="logo-dot"></span></a>
+        <div class="logo-sub">Digital health score for local businesses</div>
+      </div>
+      <button class="settings-btn" id="settingsToggle" aria-label="API settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-inner">
+        <div class="settings-row">
+          <div class="settings-field">
+            <label class="settings-label" for="apiKeyInput">Google Maps API Key</label>
+            <input type="password" id="apiKeyInput" class="settings-input" placeholder="AIza..." autocomplete="off">
+          </div>
+          <button class="settings-save" id="saveApiKey">Save Key</button>
+        </div>
+        <div class="settings-hint">
+          Required for live data. Get one free at <strong>console.cloud.google.com</strong> — enables Places API.
+          Key is stored locally in your browser only.
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ─── Main ─── -->
+<main>
+  <div class="container">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          Free Diagnostic Tool
+        </div>
+        <h1>How healthy is your<br><em>business's online presence?</em></h1>
+        <p class="hero-sub">Paste any Google Maps URL and get an instant digital presence score — with a breakdown of what's working and what needs attention.</p>
+
+        <!-- Input -->
+        <div class="input-group" id="inputGroup">
+          <span class="input-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          </span>
+          <input
+            type="url"
+            id="urlInput"
+            class="url-input"
+            placeholder="Paste a Google Maps URL — e.g. https://maps.google.com/maps/place/..."
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button class="analyze-btn" id="analyzeBtn">
+            <span id="btnText">Analyze</span>
+            <div class="spinner" id="btnSpinner" style="display:none;"></div>
+          </button>
+        </div>
+        <div class="input-error" id="inputError">Please enter a valid Google Maps URL.</div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="results" id="results">
+
+      <!-- Score Panel -->
+      <div class="score-panel">
+        <div class="demo-badge" id="demoBadge">Demo Mode</div>
+        <div class="score-panel-label">Digital Presence Score</div>
+
+        <div class="gauge-wrapper">
+          <svg class="gauge-svg" viewBox="0 0 200 200">
+            <!-- Track arc: 270° sweep, r=72, circumference = 2*pi*72 ≈ 452, arc = 452*270/360 ≈ 339 -->
+            <circle class="gauge-track" cx="100" cy="100" r="72"
+              stroke-dasharray="339"
+              stroke-dashoffset="0"
+            />
+            <!-- Fill arc: max stroke-dashoffset = 339 (empty), 0 = full -->
+            <circle class="gauge-fill" id="gaugeFill" cx="100" cy="100" r="72"
+              stroke-dasharray="339"
+              stroke-dashoffset="339"
+            />
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-score" id="gaugeScore">--</div>
+            <div class="gauge-denom">/ 100</div>
+            <div class="gauge-grade" id="gaugeGrade">—</div>
+          </div>
+        </div>
+
+        <div class="place-name" id="placeName">—</div>
+        <div class="place-address" id="placeAddress">—</div>
+        <div class="verdict" id="verdict">Scanning...</div>
+        <div class="verdict-sub" id="verdictSub">—</div>
+      </div>
+
+      <!-- Breakdown Cards -->
+      <div class="breakdown" id="breakdown">
+        <!-- Cards injected by JS -->
+      </div>
+
+      <!-- Quick Wins -->
+      <div class="quick-wins" id="quickWins">
+        <div class="quick-wins-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          Quick Wins
+        </div>
+        <div id="quickWinsList"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-section">
+        <h2>Want the full breakdown?</h2>
+        <p>Get a detailed PDF report with competitor comparison and a prioritized improvement checklist.</p>
+        <form class="cta-form" id="ctaForm">
+          <input type="email" class="cta-input" id="ctaEmail" placeholder="your@email.com" required>
+          <button type="submit" class="cta-btn">Send My Report</button>
+        </form>
+        <div class="cta-success" id="ctaSuccess">✓ Report sent! Check your inbox.</div>
+      </div>
+
+    </section>
+  </div>
+</main>
+
+<!-- ─── Footer ─── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-text">
+        Built by <a href="https://minterwebagency.com" target="_blank" rel="noopener">Minter Web Agency</a> — websites that actually work for local businesses.
+      </div>
+      <div class="footer-text" style="font-family: var(--font-mono); font-size: 11px; color: var(--color-border-strong);">
+        localrank.vercel.app
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ─── Config ───
+  const CONFIG = {
+    gaugeCircumference: 339,  // 270° arc of r=72 circle
+    categories: [
+      {
+        id: 'website',
+        name: 'Website',
+        max: 20,
+        icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+      },
+      {
+        id: 'reviews',
+        name: 'Reviews',
+        max: 20,
+        icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      },
+      {
+        id: 'rating',
+        name: 'Rating',
+        max: 20,
+        icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      },
+      {
+        id: 'info',
+        name: 'Business Info',
+        max: 20,
+        icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+      },
+      {
+        id: 'photos',
+        name: 'Photos',
+        max: 20,
+        icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+      },
+    ]
+  };
+
+  // ─── State ───
+  let state = {
+    apiKey: localStorage.getItem('localrank_gmaps_key') || '',
+    demoMode: false,
+  };
+
+  // ─── DOM Refs ───
+  const $ = (id) => document.getElementById(id);
+  const urlInput      = $('urlInput');
+  const inputGroup    = $('inputGroup');
+  const inputError    = $('inputError');
+  const analyzeBtn    = $('analyzeBtn');
+  const btnText       = $('btnText');
+  const btnSpinner    = $('btnSpinner');
+  const results       = $('results');
+  const demoBadge     = $('demoBadge');
+  const gaugeFill     = $('gaugeFill');
+  const gaugeScore    = $('gaugeScore');
+  const gaugeGrade    = $('gaugeGrade');
+  const verdict       = $('verdict');
+  const verdictSub    = $('verdictSub');
+  const placeName     = $('placeName');
+  const placeAddress  = $('placeAddress');
+  const breakdown     = $('breakdown');
+  const quickWins     = $('quickWins');
+  const quickWinsList = $('quickWinsList');
+  const ctaForm       = $('ctaForm');
+  const ctaSuccess    = $('ctaSuccess');
+  const settingsToggle= $('settingsToggle');
+  const settingsPanel = $('settingsPanel');
+  const apiKeyInput   = $('apiKeyInput');
+  const saveApiKey    = $('saveApiKey');
+
+  // ─── URL Parsing ───
+  function parsePlaceId(url) {
+    // Format 1: https://www.google.com/maps/place/...
+    let match = url.match(/place\/([^\/@]+)/);
+    if (match) return decodeURIComponent(match[1]);
+
+    // Format 2: https://maps.google.com/maps/place/?=...
+    match = url.match(/[?&]place=([^&]+)/);
+    if (match) return decodeURIComponent(match[1]);
+
+    // Format 3: plus codes like 7FG2VWV4+8G
+    match = url.match(/([2-7FGHJKLMNPQRVWX]\w{6,}\+\w+)/);
+    if (match) return match[1];
+
+    // Format 4: maps.app.link/...
+    match = url.match(/maps\.app\.link\/[^\/]+\/([^\/\?]+)/);
+    if (match) return match[1];
+
+    // Format 5: goo.gl/maps/...
+    match = url.match(/goo\.gl\/maps\/([^\/\?]+)/);
+    if (match) return match[1];
+
+    return null;
+  }
+
+  // ─── Scoring Engine ───
+  function calculateScore(data, demoMode = false) {
+    // website: 20 if has real website, 10 if social-only, 0 if none
+    let website = 0;
+    if (data.website && !data.website.includes('facebook.com') &&
+        !data.website.includes('instagram.com') && !data.website.includes('yelp.com')) {
+      website = 20;
+    } else if (data.website) {
+      website = 8; // social-only
+    }
+
+    // reviews: 0/7/14/20 based on count
+    let reviews = 0;
+    if (data.reviewCount >= 50) reviews = 20;
+    else if (data.reviewCount >= 20) reviews = 14;
+    else if (data.reviewCount >= 5) reviews = 7;
+    else if (data.reviewCount >= 1) reviews = 3;
+
+    // rating: 20 if >=4.5, 15 if >=4.0, 10 if >=3.0, 5 if <3.0, 0 if none
+    let rating = 0;
+    if (data.rating >= 4.5) rating = 20;
+    else if (data.rating >= 4.0) rating = 15;
+    else if (data.rating >= 3.0) rating = 10;
+    else if (data.rating > 0) rating = 5;
+
+    // info completeness: hours + phone + address
+    let info = 0;
+    if (data.hasHours) info += 7;
+    if (data.hasPhone) info += 7;
+    if (data.hasAddress) info += 6;
+
+    // photos: 20 if >=10, 15 if >=5, 10 if >=1, 0 if none
+    let photos = 0;
+    if (data.photoCount >= 10) photos = 20;
+    else if (data.photoCount >= 5) photos = 15;
+    else if (data.photoCount >= 1) photos = 8;
+
+    return {
+      total: website + reviews + rating + info + photos,
+      categories: {
+        website: { earned: website, max: 20 },
+        reviews:  { earned: reviews, max: 20 },
+        rating:   { earned: rating, max: 20 },
+        info:     { earned: info, max: 20 },
+        photos:   { earned: photos, max: 20 },
+      },
+      raw: data
+    };
+  }
+
+  function getInsight(categoryId, earned, max, raw) {
+    const pct = earned / max;
+    if (categoryId === 'website') {
+      if (earned === 20) return "Real website detected — customers can find you outside Google Maps.";
+      if (earned === 8) return "Only social profiles found. A dedicated website gets 3× more inquiries.";
+      return "No website found — you're missing the #1 way customers research local businesses.";
+    }
+    if (categoryId === 'reviews') {
+      if (earned >= 14) return `${raw.reviewCount || 0} reviews found — solid review volume.`;
+      if (earned >= 7) return "Moderate review presence. More reviews = more trust signals.";
+      if (earned >= 3) return "A few reviews but not enough to build real trust.";
+      return "No reviews yet. New businesses should target 10+ reviews in the first 3 months.";
+    }
+    if (categoryId === 'rating') {
+      if (earned === 20) return `Rating of ${raw.rating || '?'}/5 — excellent. Maintain quality service.`;
+      if (earned === 15) return `Rating of ${raw.rating || '?'}/5 — good. Respond to every review to protect it.`;
+      if (earned === 10) return `Rating of ${raw.rating || '?'}/5 — average. Address negative feedback promptly.`;
+      if (earned > 0) return `Rating of ${raw.rating || '?'}/5 — concerning. Investigate what's driving low scores.`;
+      return "No rating yet. Ask satisfied customers to leave a review.";
+    }
+    if (categoryId === 'info') {
+      const missing = [];
+      if (!raw.hasHours) missing.push('hours');
+      if (!raw.hasPhone) missing.push('phone');
+      if (!raw.hasAddress) missing.push('address');
+      if (!missing.length) return "All key info fields complete — good for discovery.";
+      return `Missing: ${missing.join(', ')}. Incomplete profiles lose 30% of search visibility.`;
+    }
+    if (categoryId === 'photos') {
+      if (earned >= 15) return `${raw.photoCount || 0} photos — visually rich profiles get 2× more clicks.`;
+      if (earned >= 8) return "A few photos but well below the 10+ that top-ranked businesses have.";
+      return "No photos — businesses with photos receive significantly more direction queries.";
+    }
+    return '';
+  }
+
+  function getQuickWins(score, categories, raw) {
+    const wins = [];
+    if (categories.website.earned < 20) {
+      wins.push({ text: `<strong>Get a professional website.</strong> Businesses with a website receive 3× more enquiries than those relying on Google Maps alone.` });
+    }
+    if (categories.reviews.earned < 14) {
+      wins.push({ text: `<strong>Ask happy customers to leave a review.</strong> Even 5–10 reviews dramatically improve trust and ranking.` });
+    }
+    if (categories.info.earned < 15) {
+      wins.push({ text: `<strong>Complete your business info.</strong> Add hours, phone number, and address — incomplete listings lose search visibility.` });
+    }
+    if (categories.photos.earned < 10) {
+      wins.push({ text: `<strong>Add more photos.</strong> Businesses with 10+ photos get significantly more profile views and direction requests.` });
+    }
+    if (categories.rating.earned >= 15 && categories.reviews.earned >= 7) {
+      wins.push({ text: `<strong>Respond to all reviews.</strong> Businesses that reply to reviews rank higher and convert more lookers into buyers.` });
+    }
+    return wins.slice(0, 3);
+  }
+
+  // ─── Demo Data ───
+  const DEMO_DATA = {
+    name: "Red Hills Plumbing",
+    address: "14 Station Rd, St Albans AL1 4EE, UK",
+    website: "https://redhillsplumbing.co.uk",
+    rating: 4.6,
+    reviewCount: 34,
+    hasHours: true,
+    hasPhone: true,
+    hasAddress: true,
+    photoCount: 7,
+  };
+
+  // ─── Google Maps API ───
+  async function fetchPlaceData(placeId, apiKey) {
+    // If it's a plus code, search by it first
+    const fields = 'rating,reviewCount,userRatingsTotal,name,formatted_address,website,opening_hours,photos,formatted_phone_number';
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&key=${apiKey}`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (json.status !== 'OK') {
+      throw new Error(`Google Maps API error: ${json.status}`);
+    }
+
+    const r = json.result;
+    return {
+      name: r.name || 'Unknown Business',
+      address: r.formatted_address || '',
+      website: r.website || '',
+      rating: r.rating || 0,
+      reviewCount: r.userRatingsTotal || 0,
+      hasHours: r.opening_hours ? (r.opening_hours.periods && r.opening_hours.periods.length > 0) : false,
+      hasPhone: !!r.formatted_phone_number,
+      hasAddress: !!r.formatted_address,
+      photoCount: r.photos ? r.photos.length : 0,
+    };
+  }
+
+  // ─── Validation ───
+  function isValidUrl(str) {
+    try { new URL(str); return true; } catch { return false; }
+  }
+
+  // ─── Animate Score Count Up ───
+  function countUp(el, target, duration = 1200) {
+    const start = performance.now();
+    const update = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  }
+
+  // ─── Render Results ───
+  function renderResults(scoreData, placeData, demoMode = false) {
+    const { total, categories } = scoreData;
+    const score = total;
+
+    // Show results
+    results.classList.add('visible');
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Demo badge
+    demoBadge.classList.toggle('visible', demoMode);
+
+    // Place info
+    placeName.textContent = placeData.name;
+    placeAddress.textContent = placeData.address;
+
+    // Gauge animation
+    const maxOffset = CONFIG.gaugeCircumference;
+    const fillRatio = score / 100;
+    const fillOffset = maxOffset * (1 - fillRatio);
+
+    gaugeFill.style.strokeDashoffset = maxOffset; // reset first
+    gaugeFill.className = 'gauge-fill';
+
+    // Trigger reflow
+    void gaugeFill.getBoundingClientRect();
+
+    requestAnimationFrame(() => {
+      gaugeFill.style.strokeDashoffset = fillOffset;
+    });
+
+    // Score color
+    if (score >= 80) {
+      gaugeFill.classList.add('score-high');
+    } else if (score >= 50) {
+      gaugeFill.classList.add('score-mid');
+    } else {
+      gaugeFill.classList.add('score-low');
+    }
+
+    // Count up score
+    countUp(gaugeScore, score, 1200);
+
+    // Grade
+    const grade = scoreToGrade(score);
+    const gradeClass = score >= 80 ? 'grade-high' : score >= 50 ? 'grade-mid' : 'grade-low';
+    gaugeGrade.textContent = grade;
+    gaugeGrade.className = `gauge-grade ${gradeClass}`;
+
+    // Verdict
+    const verdictInfo = getVerdict(score);
+    verdict.textContent = verdictInfo.text;
+    verdict.className = `verdict ${verdictInfo.class}`;
+    verdictSub.textContent = verdictInfo.sub;
+
+    // Category cards
+    renderBreakdown(categories, placeData);
+
+    // Quick wins
+    renderQuickWins(scoreData, placeData);
+  }
+
+  function scoreToGrade(score) {
+    if (score >= 90) return 'A+';
+    if (score >= 80) return 'A';
+    if (score >= 70) return 'B+';
+    if (score >= 60) return 'B';
+    if (score >= 50) return 'C';
+    if (score >= 40) return 'D';
+    if (score >= 30) return 'E';
+    return 'F';
+  }
+
+  function getVerdict(score) {
+    if (score >= 80) return { text: 'Strong Digital Presence', class: 'high', sub: 'This business has a solid online foundation. Maintain and optimize.' };
+    if (score >= 60) return { text: 'Room to Improve', class: 'mid', sub: 'Good foundation but several quick wins are being missed.' };
+    if (score >= 40) return { text: 'Significant Gaps', class: 'mid', sub: 'Online presence is underperforming. Action is needed.' };
+    return { text: 'Critical Attention Needed', class: 'low', sub: 'This business is nearly invisible online. Start with the quick wins below.' };
+  }
+
+  function renderBreakdown(categories, raw) {
+    breakdown.innerHTML = '';
+
+    CONFIG.categories.forEach((cat, i) => {
+      const catData = categories[cat.id];
+      const earned = catData.earned;
+      const max = catData.max;
+      const pct = max > 0 ? earned / max : 0;
+      const insight = getInsight(cat.id, earned, max, raw);
+      const barClass = pct >= 0.8 ? 'bar-high' : pct >= 0.5 ? 'bar-mid' : 'bar-low';
+
+      const card = document.createElement('div');
+      card.className = 'cat-card';
+      card.innerHTML = `
+        <div class="cat-header">
+          <div class="cat-label">
+            <div class="cat-icon">${cat.icon}</div>
+            <span class="cat-name">${cat.name}</span>
+          </div>
+          <span class="cat-score"><span>${earned}</span> / ${max}</span>
+        </div>
+        <div class="cat-bar-track">
+          <div class="cat-bar-fill ${barClass}" data-width="${pct * 100}%"></div>
+        </div>
+        <div class="cat-insight">${insight}</div>
+      `;
+      breakdown.appendChild(card);
+
+      // Stagger animation
+      setTimeout(() => {
+        card.classList.add('visible');
+        const bar = card.querySelector('.cat-bar-fill');
+        // Animate bar width
+        requestAnimationFrame(() => {
+          bar.style.width = bar.dataset.width;
+        });
+      }, 200 + i * 100);
+    });
+  }
+
+  function renderQuickWins(scoreData, raw) {
+    const wins = getQuickWins(scoreData.total, scoreData.categories, raw.raw || raw);
+    quickWins.style.display = wins.length ? 'block' : 'none';
+    quickWinsList.innerHTML = wins.map(w => `
+      <div class="quick-win-item">
+        <div class="quick-win-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="quick-win-text">${w.text}</div>
+      </div>
+    `).join('');
+  }
+
+  // ─── Main Analyze Flow ───
+  async function analyze() {
+    const url = urlInput.value.trim();
+
+    // Validate
+    if (!url || !isValidUrl(url)) {
+      inputGroup.classList.add('has-error');
+      inputError.style.display = 'block';
+      return;
+    }
+    inputGroup.classList.remove('has-error');
+    inputError.style.display = 'none';
+
+    // Set loading
+    inputGroup.classList.add('is-loading');
+    analyzeBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'block';
+
+    // Reset results
+    results.classList.remove('visible');
+    gaugeFill.style.strokeDashoffset = CONFIG.gaugeCircumference;
+    gaugeFill.className = 'gauge-fill';
+    gaugeScore.textContent = '--';
+    gaugeGrade.textContent = '—';
+    verdict.textContent = 'Scanning...';
+    verdict.className = 'verdict';
+    verdictSub.textContent = 'Fetching data from Google Maps...';
+
+    // Small delay for perceived work
+    await new Promise(r => setTimeout(r, 600));
+
+    try {
+      if (state.apiKey) {
+        // Live mode
+        const placeId = parsePlaceId(url);
+        if (!placeId) throw new Error('Could not parse place ID from URL.');
+
+        const placeData = await fetchPlaceData(placeId, state.apiKey);
+        const scoreData = calculateScore(placeData);
+        state.demoMode = false;
+        renderResults(scoreData, placeData, false);
+      } else {
+        // Demo mode
+        const scoreData = calculateScore(DEMO_DATA);
+        state.demoMode = true;
+        renderResults(scoreData, DEMO_DATA, true);
+      }
+    } catch (err) {
+      console.error('Analysis error:', err);
+      verdict.textContent = 'Scan Failed';
+      verdict.className = 'verdict low';
+      verdictSub.textContent = err.message || 'Could not fetch data. Check the URL and try again.';
+
+      // Still show results panel with error state
+      results.classList.add('visible');
+      gaugeFill.style.strokeDashoffset = CONFIG.gaugeCircumference;
+      gaugeScore.textContent = '—';
+      gaugeGrade.textContent = '?';
+    } finally {
+      inputGroup.classList.remove('is-loading');
+      analyzeBtn.disabled = false;
+      btnText.style.display = 'inline';
+      btnSpinner.style.display = 'none';
+    }
+  }
+
+  // ─── Event Listeners ───
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') analyze();
+  });
+
+  urlInput.addEventListener('input', () => {
+    inputGroup.classList.remove('has-error');
+    inputError.style.display = 'none';
+  });
+
+  analyzeBtn.addEventListener('click', analyze);
+
+  settingsToggle.addEventListener('click', () => {
+    settingsPanel.classList.toggle('open');
+    if (settingsPanel.classList.contains('open')) {
+      apiKeyInput.focus();
+    }
+  });
+
+  saveApiKey.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    state.apiKey = key;
+    localStorage.setItem('localrank_gmaps_key', key);
+    settingsPanel.classList.remove('open');
+    if (key) {
+      urlInput.placeholder = 'Paste a Google Maps URL to analyze with your API key...';
+    }
+  });
+
+  ctaForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ctaSuccess.classList.add('visible');
+    ctaForm.querySelector('button').disabled = true;
+    // In production: send to email service
+  });
+
+  // ─── Init ───
+  if (state.apiKey) {
+    apiKeyInput.value = state.apiKey;
+    urlInput.placeholder = 'Paste a Google Maps URL to analyze with your API key...';
+  }
+
+  // Pre-fill demo URL for easy testing
+  urlInput.focus();
+</script>
+</body>
+</html>
