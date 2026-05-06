@@ -588,7 +588,7 @@ function initSupabase() {
   if (typeof window === 'undefined') return;
   try {
     sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sb?.$session?.access_token || ''}` } }
+      auth: { persistSession: true, autoRefreshToken: true }
     });
 
     // Init Auth UI
@@ -656,7 +656,8 @@ async function signOut() {
 
 // ─── API Calls ───
 async function callEdgeFunction(fn, body) {
-  const token = sb?.$session?.access_token;
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${SUPABASE_FUNCTION_URL}/${fn}`, {
@@ -716,7 +717,7 @@ async function analyze() {
       // Live scan via edge function
       const data = await callEdgeFunction('proxy-scan', { placeUrl: url });
       lastScanData = data;
-      renderResults(data, false);
+      renderResults(data, data.isDemo === true);
 
       // Increment local counter
       if (currentProfile && currentProfile.plan !== 'pro') {

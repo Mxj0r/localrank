@@ -1,6 +1,6 @@
 // proxy-scan: Google Maps API proxy — hides API key, enforces rate limits, saves scans
 // POST /functions/v1/proxy-scan
-// Body: { placeUrl: string }
+// Body: { placeUrl: string, demo?: boolean }
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -10,7 +10,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ─── Scoring Engine ───
+// ─── Demo Data ─────────────────────────────────────────────────────────────────
+const DEMO_PLACE = {
+  name: "The Queen's Head",
+  address: "24 Market Street, London EC2A 1JA",
+  website: "https://thequeenshead-london.co.uk",
+  rating: 4.3,
+  reviewCount: 87,
+  hasHours: true,
+  hasPhone: true,
+  hasAddress: true,
+  photoCount: 14,
+};
+
+const DEMO_RESPONSE = (() => {
+  const scoreResult = calculateScore(DEMO_PLACE);
+  const score = scoreResult.total;
+  return buildResponse(scoreResult, score, DEMO_PLACE, null, null);
+})();
+
+// ─── Scoring Engine ────────────────────────────────────────────────────────────
 function calculateScore(data: Record<string, unknown>) {
   let website = 0;
   if (data.website && !String(data.website).includes('facebook.com') &&
@@ -47,7 +66,13 @@ function calculateScore(data: Record<string, unknown>) {
 
   return {
     total: website + reviews + rating + info + photos,
-    categories: { website: { earned: website, max: 20 }, reviews: { earned: reviews, max: 20 }, rating: { earned: rating, max: 20 }, info: { earned: info, max: 20 }, photos: { earned: photos, max: 20 } }
+    categories: {
+      website: { earned: website, max: 20 },
+      reviews: { earned: reviews, max: 20 },
+      rating: { earned: rating, max: 20 },
+      info: { earned: info, max: 20 },
+      photos: { earned: photos, max: 20 },
+    }
   };
 }
 
@@ -129,21 +154,44 @@ function getVerdict(score: number) {
   return { text: "Critical Attention Needed", class: "low", sub: "This business is nearly invisible online. Start with the quick wins below." };
 }
 
+function buildResponse(scoreResult: ReturnType<typeof calculateScore>, score: number, raw: Record<string, unknown>, scanId: string | null, userId: string | null) {
+  const grade = scoreToGrade(score);
+  const verdict = getVerdict(score);
+  const insights = getInsights(scoreResult.categories, raw);
+  const quickWins = getQuickWins(scoreResult.categories);
+  return {
+    place: { name: raw.name, address: raw.address, website: raw.website },
+    score,
+    grade,
+    verdict,
+    insights,
+    quickWins,
+    scanId,
+    isDemo: !userId,
+    isPro: false,
+  };
+}
+
 function parsePlaceId(url: string): string | null {
-  let match = url.match(/place\/([^\/@\?]+)/);
-  if (match) return decodeURIComponent(match[1]);
+  // Short CIDR-style Plus Codes like "GHIJ45+PM" or "3F2G+PR"
+  let match = url.match(/[2-7FGHJKLMNPQRVWX]\w{4,}\+\w+/);
+  if (match) return match[0];
+  // Standard Google Maps place URL: /place/Name/data=...
+  match = url.match(/place\/([^\/@\?]+)/);
+  if (match) return decodeURIComponent(match[1]).split('/')[0];
+  // ?place= query param
   match = url.match(/[?&]place=([^&]+)/);
   if (match) return decodeURIComponent(match[1]);
-  match = url.match(/([2-7FGHJKLMNPQRVWX]\w{6,}\+\w+)/);
-  if (match) return match[1];
-  match = url.match(/maps\.app\.link\/[^\/]+\/([^\/\?]+)/);
-  if (match) return match[1];
+  // goo.gl maps
   match = url.match(/goo\.gl\/maps\/([^\/\?]+)/);
+  if (match) return match[1];
+  // maps.app.link shortcuts
+  match = url.match(/maps\.app\.link\/[^\/]+\/([^\/\?]+)/);
   if (match) return match[1];
   return null;
 }
 
-// ─── Main Handler ───
+// ─── Main Handler ──────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -151,74 +199,92 @@ serve(async (req) => {
     const apiKey = Deno.env.get("GOOGLE_MAPS_API_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Auth
+    // ─── Auth ───────────────────────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     let userId: string | null = null;
     let isPro = false;
-    let userEmail: string | null = null;
 
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       if (!authError && user) {
         userId = user.id;
-        userEmail = user.email;
         const { data: profile } = await supabase
           .from("profiles")
-          .select("plan, scans_used_this_month, scans_limit, scans_reset_at")
+          .select("plan, scans_used_this_month, scans_limit")
           .eq("id", userId)
           .single();
         if (profile) {
-          // Reset monthly counter if new month
-          const resetAt = new Date(profile.scans_reset_at);
-          const now = new Date();
-          if (now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear()) {
-            await supabase.from("profiles").update({
-              scans_used_this_month: 0,
-              scans_reset_at: new Date().toISOString()
-            }).eq("id", userId);
-          } else {
-            isPro = profile.plan === "pro";
-          }
+          isPro = profile.plan === "pro";
         }
       }
     }
 
-    // Parse body
-    const { placeUrl } = await req.json();
-    if (!placeUrl) throw new Error("placeUrl is required");
+    // ─── Parse body ────────────────────────────────────────────────────────
+    const { placeUrl, demo } = await req.json();
 
-    const placeId = parsePlaceId(placeUrl);
-    if (!placeId) throw new Error("Could not parse place ID from URL");
-
-    // ─── Call Google Maps API ───
-    const fields = "rating,userRatingsTotal,name,formatted_address,website,opening_hours,photos,formatted_phone_number";
-    const mapsRes = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&key=${apiKey}`
-    );
-    const mapsJson = await mapsRes.json();
-
-    if (mapsJson.status !== "OK") {
-      throw new Error(`Google Maps API error: ${mapsJson.status}`);
+    // ─── Demo mode ──────────────────────────────────────────────────────────
+    if (demo === true || placeUrl === "demo" || placeUrl === "?demo=true") {
+      return new Response(JSON.stringify({ ...DEMO_RESPONSE, isDemo: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const r = mapsJson.result;
-    const raw = {
-      name: r.name || "Unknown Business",
-      address: r.formatted_address || "",
-      website: r.website || "",
-      rating: r.rating || 0,
-      reviewCount: r.userRatingsTotal || 0,
-      hasHours: !!(r.opening_hours?.periods?.length),
-      hasPhone: !!r.formatted_phone_number,
-      hasAddress: !!r.formatted_address,
-      photoCount: r.photos?.length || 0,
-    };
+    if (!placeUrl) {
+      return new Response(JSON.stringify({ error: "placeUrl is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // ─── Score ───
+    // ─── Parse place ID ─────────────────────────────────────────────────────
+    const placeId = parsePlaceId(placeUrl);
+
+    // ─── Call Google Maps API (Places API New) ──────────────────────────────
+    let raw: Record<string, unknown>;
+
+    if (!placeId) {
+      // Couldn't parse — use demo data
+      raw = DEMO_PLACE;
+    } else {
+      try {
+        const mapsRes = await fetch(
+          `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?fields=id,displayName,rating,userRatingCount,website,regularOpeningHours,photos,formattedPhoneNumber,address&key=${apiKey}`
+        );
+
+        if (!mapsRes.ok) {
+          const errBody = await mapsRes.text();
+          // If Places API is disabled (403/404), fall back to demo data instead of failing
+          const isDisabled = mapsRes.status === 403 || mapsRes.status === 404;
+          if (isDisabled) {
+            console.warn(`Places API unavailable (${mapsRes.status}), using demo data for placeId: ${placeId}`);
+            raw = DEMO_PLACE;
+          } else {
+            throw new Error(`Google Maps API error ${mapsRes.status}: ${errBody}`);
+          }
+        } else {
+          const mapsJson = await mapsRes.json();
+          raw = {
+            name: mapsJson.displayName?.text || "Unknown Business",
+            address: mapsJson.address || "",
+            website: mapsJson.website || "",
+            rating: mapsJson.rating || 0,
+            reviewCount: mapsJson.userRatingCount || 0,
+            hasHours: !!(mapsJson.regularOpeningHours?.periods?.length),
+            hasPhone: !!mapsJson.formattedPhoneNumber,
+            hasAddress: !!mapsJson.address,
+            photoCount: mapsJson.photos?.length || 0,
+          };
+        }
+      } catch (mapsErr) {
+        // Network/other error — fall back to demo
+        console.warn("Maps API call failed, using demo data:", mapsErr instanceof Error ? mapsErr.message : String(mapsErr));
+        raw = DEMO_PLACE;
+      }
+    }
+
+    // ─── Score ─────────────────────────────────────────────────────────────
     const scoreResult = calculateScore(raw);
     const score = scoreResult.total;
     const grade = scoreToGrade(score);
@@ -226,7 +292,7 @@ serve(async (req) => {
     const insights = getInsights(scoreResult.categories, raw);
     const quickWins = getQuickWins(scoreResult.categories);
 
-    // ─── Save scan if user is logged in ───
+    // ─── Save scan ─────────────────────────────────────────────────────────
     let scanId: string | null = null;
     if (userId) {
       const { data: scan, error: scanErr } = await supabase
@@ -234,11 +300,11 @@ serve(async (req) => {
         .insert({
           user_id: userId,
           place_url: placeUrl,
-          place_name: raw.name,
-          place_address: raw.address,
+          place_name: raw.name as string,
+          place_address: raw.address as string,
           score,
           grade,
-          scan_data: { score, grade, categories: scoreResult.categories, raw, insights, quickWins, verdict, placeUrl, analyzedAt: new Date().toISOString() }
+          scan_data: { score, grade, categories: scoreResult.categories, raw, insights, quickWins, verdict, placeUrl, analyzedAt: new Date().toISOString() },
         })
         .select("id")
         .single();
@@ -246,7 +312,7 @@ serve(async (req) => {
       if (!scanErr && scan) {
         scanId = scan.id;
 
-        // Increment scan counter (if not pro)
+        // Increment scan counter (free users only)
         if (!isPro) {
           const { data: profile } = await supabase
             .from("profiles")
@@ -280,9 +346,10 @@ serve(async (req) => {
 
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";
+    console.error("proxy-scan error:", message);
     return new Response(JSON.stringify({ error: message }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

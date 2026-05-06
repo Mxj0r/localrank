@@ -108,6 +108,13 @@ serve(async (req) => {
       };
     }
 
+    // Pass webhook URL so webhook fires for all payment events
+    if (!params.metadata) params.metadata = {};
+    params.metadata = {
+      ...params.metadata as object,
+      webhookUrl: `${webhookUrl}/functions/v1/stripe-webhook`,
+    };
+
     const session = await stripe.checkout.sessions.create(params);
 
     // Store checkout session

@@ -17,6 +17,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendKey = Deno.env.get("RESEND_API_KEY")!;
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "reports@resend.com";
+    const fromName = Deno.env.get("RESEND_FROM_NAME") || "LocalRank";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -104,7 +106,7 @@ Built by Minter Web Agency — minterwebagency.com
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "LocalRank <reports@localrank-phi.vercel.app>",
+        from: `${fromName} <${fromEmail}>`,
         to: email || user.email,
         subject: `Your LocalRank Report — ${placeName} (Score: ${score}/100)`,
         text: reportText,
